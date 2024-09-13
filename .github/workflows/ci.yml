@@ -57,7 +57,14 @@ jobs:
         id: test-action
         uses: ./
         with:
-          milliseconds: 2000
+          CLIENT_TOKEN: 1
+          CLIENT_SECRET: 1
+          ACCESS_TOKEN: 1
+          HOST: 1
+          URLS: |
+            1
+            1
+            1
 
       - name: Print Output
         id: output

@@ -33,7 +33,8 @@
     "package": "npx ncc build src/index.ts -o dist --source-map --license licenses.txt",
     "package:watch": "npm run package -- --watch",
     "test": "npx jest",
-    "all": "npm run format:write && npm run lint && npm run test && npm run coverage && npm run package"
+    "all": "npm run format:write && npm run lint && npm run test && npm run coverage && npm run package",
+    "start": "npm run bundle && act -j test-action"
   },
   "license": "MIT",
   "jest": {
@@ -66,7 +67,9 @@
     ]
   },
   "dependencies": {
-    "@actions/core": "^1.10.1"
+    "@actions/core": "^1.10.1",
+    "@fxts/core": "^1.0.1",
+    "akamai-edgegrid": "^3.5.1"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
