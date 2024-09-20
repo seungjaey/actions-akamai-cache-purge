@@ -22,7 +22,7 @@ inputs:
     description: 'akamai auth > host'
     required: true
   URLS:
-    description: 'akamai auth > urls'
+    description: 'urls'
     required: true
 
 runs:
