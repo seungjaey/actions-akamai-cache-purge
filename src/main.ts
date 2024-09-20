@@ -49,11 +49,11 @@ export async function run(): Promise<void> {
     const CLIENT_TOKEN: string = core.getInput('CLIENT_TOKEN');
     const CLIENT_SECRET: string = core.getInput('CLIENT_SECRET');
     const ACCESS_TOKEN: string = core.getInput('ACCESS_TOKEN');
-    const BASE_URL: string = core.getInput('HOST');
+    const HOST: string = core.getInput('HOST');
     const URLS: string = core.getInput('URLS');
     const isInvalidInput = some(
       (input) => isNil(input) || isEmpty(input),
-      [CLIENT_TOKEN, CLIENT_SECRET, ACCESS_TOKEN, BASE_URL, URLS],
+      [CLIENT_TOKEN, CLIENT_SECRET, ACCESS_TOKEN, HOST, URLS],
     );
 
     if (isInvalidInput) {
@@ -61,7 +61,7 @@ export async function run(): Promise<void> {
     }
 
     const deleteUrls = pipe(URLS.split('\n'), map(trimLine), filter(checkValidUrl), filter(isNotEmpty), toArray);
-    const eg = new EdgeGrid(CLIENT_TOKEN, CLIENT_SECRET, ACCESS_TOKEN, BASE_URL);
+    const eg = new EdgeGrid(CLIENT_TOKEN, CLIENT_SECRET, ACCESS_TOKEN, HOST);
     const deleteResult = await sendInvalidRequest(eg, deleteUrls);
 
     core.debug('raw response body');
