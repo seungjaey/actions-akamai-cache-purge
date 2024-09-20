@@ -73,6 +73,7 @@
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
+    "@kurly/prettier-config": "^0.0.0",
     "@types/jest": "^29.5.12",
     "@types/node": "^22.5.4",
     "@typescript-eslint/eslint-plugin": "^8.4.0",
@@ -88,5 +89,6 @@
     "prettier-eslint": "^16.3.0",
     "ts-jest": "^29.2.5",
     "typescript": "^5.5.4"
-  }
+  },
+  "prettier": "@kurly/prettier-config"
 }

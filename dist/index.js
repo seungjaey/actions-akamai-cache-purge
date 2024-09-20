@@ -45413,19 +45413,43 @@ exports.run = run;
 const core = __importStar(__nccwpck_require__(2186));
 const akamai_edgegrid_1 = __importDefault(__nccwpck_require__(8403));
 const core_1 = __nccwpck_require__(4414);
+const ACTION_NAME = 'actions-akamai-cache-purge';
+const isNotEmpty = (0, core_1.negate)(core_1.isEmpty);
+const trimLine = (line) => line.trim();
+const createErrorMessage = (msg) => `[${ACTION_NAME}] ${msg}`;
 const checkValidUrl = (url) => {
     try {
         new URL(url);
         return true;
     }
-    catch (error) {
+    catch {
         return false;
     }
 };
-/**
- * The main function for the action.
- * @returns {Promise<void>} Resolves when the action is complete.
- */
+const sendInvalidRequest = async (eg, urls) => new Promise((resolve, reject) => {
+    try {
+        eg.auth({
+            path: '/ccu/v3/delete/url/production',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: {
+                objects: urls,
+            },
+        });
+        eg.send((error, _, body) => {
+            if (error) {
+                reject(new Error(createErrorMessage('Fail to request')));
+                return;
+            }
+            resolve(body);
+        });
+    }
+    catch (error) {
+        reject(error);
+    }
+});
 async function run() {
     try {
         const CLIENT_TOKEN = core.getInput('CLIENT_TOKEN');
@@ -45433,47 +45457,29 @@ async function run() {
         const ACCESS_TOKEN = core.getInput('ACCESS_TOKEN');
         const BASE_URL = core.getInput('HOST');
         const URLS = core.getInput('URLS');
-        console.log(URLS);
-        core.debug(URLS);
-        const cacheDeleteUrls = (0, core_1.pipe)(URLS.split('\n'), (0, core_1.map)(line => line.trim()), 
-        // TODO: `/` 와 같이 모든 경로를 포함할 수 있는 주소는 제거
-        (0, core_1.filter)(checkValidUrl), (0, core_1.filter)(line => !(0, core_1.isEmpty)(line)), core_1.toArray);
+        const isInvalidInput = (0, core_1.some)((input) => (0, core_1.isNil)(input) || (0, core_1.isEmpty)(input), [CLIENT_TOKEN, CLIENT_SECRET, ACCESS_TOKEN, BASE_URL, URLS]);
+        if (isInvalidInput) {
+            throw new Error(createErrorMessage('invalid input'));
+        }
+        const deleteUrls = (0, core_1.pipe)(URLS.split('\n'), (0, core_1.map)(trimLine), (0, core_1.filter)(checkValidUrl), (0, core_1.filter)(isNotEmpty), core_1.toArray);
         const eg = new akamai_edgegrid_1.default(CLIENT_TOKEN, CLIENT_SECRET, ACCESS_TOKEN, BASE_URL);
-        eg.auth({
-            path: '/ccu/v3/delete/url/production',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: {
-                objects: cacheDeleteUrls
-            }
-        });
-        eg.send((error, response, body) => {
-            console.group('response');
-            console.log(error);
-            console.log(response);
-            console.log(body);
-            console.groupEnd();
-        });
-        core.debug(CLIENT_SECRET);
-        /*
-        // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-        core.debug(`Waiting ${ms} milliseconds ...`)
-    
-        // Log the current timestamp, wait, then log the new timestamp
-        core.debug(new Date().toTimeString())
-        await wait(parseInt(ms, 10))
-        core.debug(new Date().toTimeString())
-    
-        // Set outputs for other workflow steps to use
-         */
-        core.setOutput('time', new Date().toTimeString());
+        const deleteResult = await sendInvalidRequest(eg, deleteUrls);
+        core.debug('raw response body');
+        core.debug(deleteResult || 'Empty response body');
+        core.summary.addHeading(`[${ACTION_NAME}]`).addTable([
+            [
+                {
+                    data: 'url',
+                    header: true,
+                },
+            ],
+            ...(0, core_1.pipe)(deleteUrls, (0, core_1.map)((url) => [url]), core_1.toArray),
+        ]);
     }
     catch (error) {
-        // Fail the workflow run if an error occurs
-        if (error instanceof Error)
+        if (error instanceof Error) {
             core.setFailed(error.message);
+        }
     }
 }
 

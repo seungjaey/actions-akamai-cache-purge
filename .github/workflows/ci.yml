@@ -62,10 +62,8 @@ jobs:
           ACCESS_TOKEN: 1
           HOST: 1
           URLS: |
-            1
-            1
-            1
-
-      - name: Print Output
-        id: output
-        run: echo "${{ steps.test-action.outputs.time }}"
+            url_1
+            url_1
+            url_1
+            url_1
+            url_1
