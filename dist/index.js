@@ -45466,7 +45466,9 @@ async function run() {
         const deleteResult = await sendInvalidRequest(eg, deleteUrls);
         core.debug('raw response body');
         core.debug(deleteResult || 'Empty response body');
-        core.summary.addHeading(`[${ACTION_NAME}]`).addTable([
+        core.summary
+            .addHeading(`[${ACTION_NAME}]`)
+            .addTable([
             [
                 {
                     data: 'url',
@@ -45474,7 +45476,8 @@ async function run() {
                 },
             ],
             ...(0, core_1.pipe)(deleteUrls, (0, core_1.map)((url) => [url]), core_1.toArray),
-        ]);
+        ])
+            .write();
     }
     catch (error) {
         if (error instanceof Error) {

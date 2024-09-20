@@ -67,19 +67,22 @@ export async function run(): Promise<void> {
     core.debug('raw response body');
     core.debug(deleteResult || 'Empty response body');
 
-    core.summary.addHeading(`[${ACTION_NAME}]`).addTable([
-      [
-        {
-          data: 'url',
-          header: true,
-        },
-      ],
-      ...pipe(
-        deleteUrls,
-        map((url) => [url]),
-        toArray,
-      ),
-    ]);
+    core.summary
+      .addHeading(`[${ACTION_NAME}]`)
+      .addTable([
+        [
+          {
+            data: 'url',
+            header: true,
+          },
+        ],
+        ...pipe(
+          deleteUrls,
+          map((url) => [url]),
+          toArray,
+        ),
+      ])
+      .write();
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message);
