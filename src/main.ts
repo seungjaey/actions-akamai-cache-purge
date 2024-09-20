@@ -1,26 +1,88 @@
-import * as core from '@actions/core'
-import { wait } from './wait'
+import * as core from '@actions/core';
+import EdgeGrid from 'akamai-edgegrid';
+import { pipe, map, filter, isEmpty, isNil, toArray, negate, some } from '@fxts/core';
 
-/**
- * The main function for the action.
- * @returns {Promise<void>} Resolves when the action is complete.
- */
+const ACTION_NAME = 'actions-akamai-cache-purge';
+
+const isNotEmpty = negate(isEmpty);
+
+const trimLine = (line: string): string => line.trim();
+
+const createErrorMessage = (msg: string): string => `[${ACTION_NAME}] ${msg}`;
+
+const checkValidUrl = (url: string): boolean => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const sendInvalidRequest = async (eg: EdgeGrid, urls: string[]): Promise<string | undefined> =>
+  new Promise((resolve, reject) => {
+    try {
+      eg.auth({
+        path: '/ccu/v3/delete/url/production',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: {
+          objects: urls,
+        },
+      });
+      eg.send((error, _, body) => {
+        if (error) {
+          reject(new Error(createErrorMessage('Fail to request')));
+          return;
+        }
+        resolve(body);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+
 export async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
+    const CLIENT_TOKEN: string = core.getInput('CLIENT_TOKEN');
+    const CLIENT_SECRET: string = core.getInput('CLIENT_SECRET');
+    const ACCESS_TOKEN: string = core.getInput('ACCESS_TOKEN');
+    const HOST: string = core.getInput('HOST');
+    const URLS: string = core.getInput('URLS');
+    const isInvalidInput = some(
+      (input) => isNil(input) || isEmpty(input),
+      [CLIENT_TOKEN, CLIENT_SECRET, ACCESS_TOKEN, HOST, URLS],
+    );
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    if (isInvalidInput) {
+      throw new Error(createErrorMessage('invalid input'));
+    }
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    const deleteUrls = pipe(URLS.split('\n'), map(trimLine), filter(checkValidUrl), filter(isNotEmpty), toArray);
+    const eg = new EdgeGrid(CLIENT_TOKEN, CLIENT_SECRET, ACCESS_TOKEN, HOST);
+    const deleteResult = await sendInvalidRequest(eg, deleteUrls);
 
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
+    core.debug('raw response body');
+    core.debug(deleteResult || 'Empty response body');
+
+    core.summary.addHeading(`[${ACTION_NAME}]`).addTable([
+      [
+        {
+          data: 'url',
+          header: true,
+        },
+      ],
+      ...pipe(
+        deleteUrls,
+        map((url) => [url]),
+        toArray,
+      ),
+    ]);
   } catch (error) {
-    // Fail the workflow run if an error occurs
-    if (error instanceof Error) core.setFailed(error.message)
+    if (error instanceof Error) {
+      core.setFailed(error.message);
+    }
   }
 }
