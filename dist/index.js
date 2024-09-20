@@ -45455,14 +45455,14 @@ async function run() {
         const CLIENT_TOKEN = core.getInput('CLIENT_TOKEN');
         const CLIENT_SECRET = core.getInput('CLIENT_SECRET');
         const ACCESS_TOKEN = core.getInput('ACCESS_TOKEN');
-        const BASE_URL = core.getInput('HOST');
+        const HOST = core.getInput('HOST');
         const URLS = core.getInput('URLS');
-        const isInvalidInput = (0, core_1.some)((input) => (0, core_1.isNil)(input) || (0, core_1.isEmpty)(input), [CLIENT_TOKEN, CLIENT_SECRET, ACCESS_TOKEN, BASE_URL, URLS]);
+        const isInvalidInput = (0, core_1.some)((input) => (0, core_1.isNil)(input) || (0, core_1.isEmpty)(input), [CLIENT_TOKEN, CLIENT_SECRET, ACCESS_TOKEN, HOST, URLS]);
         if (isInvalidInput) {
             throw new Error(createErrorMessage('invalid input'));
         }
         const deleteUrls = (0, core_1.pipe)(URLS.split('\n'), (0, core_1.map)(trimLine), (0, core_1.filter)(checkValidUrl), (0, core_1.filter)(isNotEmpty), core_1.toArray);
-        const eg = new akamai_edgegrid_1.default(CLIENT_TOKEN, CLIENT_SECRET, ACCESS_TOKEN, BASE_URL);
+        const eg = new akamai_edgegrid_1.default(CLIENT_TOKEN, CLIENT_SECRET, ACCESS_TOKEN, HOST);
         const deleteResult = await sendInvalidRequest(eg, deleteUrls);
         core.debug('raw response body');
         core.debug(deleteResult || 'Empty response body');
