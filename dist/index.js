@@ -45466,7 +45466,7 @@ async function run() {
         const deleteResult = await sendInvalidRequest(eg, deleteUrls);
         core.debug('raw response body');
         core.debug(deleteResult || 'Empty response body');
-        core.summary
+        await core.summary
             .addHeading(`[${ACTION_NAME}]`)
             .addTable([
             [

@@ -67,7 +67,7 @@ export async function run(): Promise<void> {
     core.debug('raw response body');
     core.debug(deleteResult || 'Empty response body');
 
-    core.summary
+    await core.summary
       .addHeading(`[${ACTION_NAME}]`)
       .addTable([
         [
