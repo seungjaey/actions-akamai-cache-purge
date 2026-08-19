@@ -19,6 +19,19 @@ const checkValidUrl = (url: string): boolean => {
   }
 };
 
+// error.config/request/toJSON은 서명된 Authorization 헤더를 담고 있어 절대 로그에 넣지 않는다.
+const describeRequestError = (error: {
+  code?: string;
+  message?: string;
+  response?: { status?: number; statusText?: string; data?: unknown };
+}): string => {
+  if (error.response) {
+    const { status, statusText, data } = error.response;
+    return [status, statusText, data ? JSON.stringify(data) : undefined].filter(Boolean).join(' ');
+  }
+  return error.code ?? error.message ?? 'unknown error';
+};
+
 const sendInvalidRequest = async (eg: EdgeGrid, urls: string[]): Promise<string | undefined> =>
   new Promise((resolve, reject) => {
     try {
@@ -34,7 +47,7 @@ const sendInvalidRequest = async (eg: EdgeGrid, urls: string[]): Promise<string 
       });
       eg.send((error, _, body) => {
         if (error) {
-          reject(new Error(createErrorMessage('Fail to request')));
+          reject(new Error(createErrorMessage(`Fail to request: ${describeRequestError(error)}`)));
           return;
         }
         resolve(body);
@@ -44,7 +57,7 @@ const sendInvalidRequest = async (eg: EdgeGrid, urls: string[]): Promise<string 
     }
   });
 
-export async function run(): Promise<void> {
+async function run(): Promise<void> {
   try {
     const CLIENT_TOKEN: string = core.getInput('CLIENT_TOKEN');
     const CLIENT_SECRET: string = core.getInput('CLIENT_SECRET');
@@ -61,6 +74,13 @@ export async function run(): Promise<void> {
     }
 
     const deleteUrls = pipe(URLS.split('\n'), map(trimLine), filter(checkValidUrl), filter(isNotEmpty), toArray);
+
+    core.info(`Purging ${deleteUrls.length} url(s)`);
+
+    if (deleteUrls.length === 0) {
+      throw new Error(createErrorMessage('no valid url'));
+    }
+
     const eg = new EdgeGrid(CLIENT_TOKEN, CLIENT_SECRET, ACCESS_TOKEN, HOST);
     const deleteResult = await sendInvalidRequest(eg, deleteUrls);
 
@@ -89,3 +109,5 @@ export async function run(): Promise<void> {
     }
   }
 }
+
+export { run };

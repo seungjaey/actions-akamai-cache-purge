@@ -45426,6 +45426,14 @@ const checkValidUrl = (url) => {
         return false;
     }
 };
+// error.config/request/toJSON은 서명된 Authorization 헤더를 담고 있어 절대 로그에 넣지 않는다.
+const describeRequestError = (error) => {
+    if (error.response) {
+        const { status, statusText, data } = error.response;
+        return [status, statusText, data ? JSON.stringify(data) : undefined].filter(Boolean).join(' ');
+    }
+    return error.code ?? error.message ?? 'unknown error';
+};
 const sendInvalidRequest = async (eg, urls) => new Promise((resolve, reject) => {
     try {
         eg.auth({
@@ -45440,7 +45448,7 @@ const sendInvalidRequest = async (eg, urls) => new Promise((resolve, reject) => 
         });
         eg.send((error, _, body) => {
             if (error) {
-                reject(new Error(createErrorMessage('Fail to request')));
+                reject(new Error(createErrorMessage(`Fail to request: ${describeRequestError(error)}`)));
                 return;
             }
             resolve(body);
@@ -45462,6 +45470,10 @@ async function run() {
             throw new Error(createErrorMessage('invalid input'));
         }
         const deleteUrls = (0, core_1.pipe)(URLS.split('\n'), (0, core_1.map)(trimLine), (0, core_1.filter)(checkValidUrl), (0, core_1.filter)(isNotEmpty), core_1.toArray);
+        core.info(`Purging ${deleteUrls.length} url(s)`);
+        if (deleteUrls.length === 0) {
+            throw new Error(createErrorMessage('no valid url'));
+        }
         const eg = new akamai_edgegrid_1.default(CLIENT_TOKEN, CLIENT_SECRET, ACCESS_TOKEN, HOST);
         const deleteResult = await sendInvalidRequest(eg, deleteUrls);
         core.debug('raw response body');
